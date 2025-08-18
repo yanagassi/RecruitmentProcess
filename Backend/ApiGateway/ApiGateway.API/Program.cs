@@ -8,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add configuration for Ocelot
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile("ocelot.Development.json", optional: true, reloadOnChange: true);
+}
 builder.Services.AddControllers();
 
 // Configure JWT Authentication

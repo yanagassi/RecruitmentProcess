@@ -1,11 +1,16 @@
+using System.Security.Claims;
 using System.Text;
+using System.Text.Encodings.Web;
 using EmployeeService.API.Data;
 using EmployeeService.API.Services;
 using EmployeeService.API.Settings;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,10 +32,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-builder.Services.Configure<JwtSettings>(jwtSettings);
-
-var secret = jwtSettings["Secret"];
-var key = Encoding.ASCII.GetBytes(secret);
+var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -49,7 +51,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = ClaimTypes.Email
     };
 });
 
@@ -69,7 +72,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
+
+// Authentication and Authorization
+builder.Services.AddAuthorization();
 
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -127,7 +138,7 @@ app.UseHttpsRedirection();
 // Use CORS
 app.UseCors("AllowReactApp");
 
-// Add authentication middleware
+// Add authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 

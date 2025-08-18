@@ -119,12 +119,37 @@ namespace EmployeeService.API.Services
                     Email = createEmployeeDto.Email,
                     DocNumber = createEmployeeDto.DocNumber,
                     Age = createEmployeeDto.Age,
+                    Position = createEmployeeDto.Position,
+                    Department = createEmployeeDto.Department,
+                    Salary = createEmployeeDto.Salary,
                     HireDate = createEmployeeDto.HireDate,
+                    ManagerId = createEmployeeDto.ManagerId,
                     PermissionLevel = createEmployeeDto.PermissionLevel
                 };
 
                 _context.Employees.Add(employee);
                 await _context.SaveChangesAsync();
+
+                // Add phones if provided
+                if (createEmployeeDto.Phones != null && createEmployeeDto.Phones.Any())
+                {
+                    foreach (var phoneDto in createEmployeeDto.Phones)
+                    {
+                        if (!string.IsNullOrEmpty(phoneDto.PhoneNumber))
+                        {
+                            var phone = new EmployeePhone
+                            {
+                                EmployeeId = employee.Id,
+                                PhoneNumber = phoneDto.PhoneNumber,
+                                PhoneType = phoneDto.PhoneType ?? "Mobile",
+                                IsPrimary = phoneDto.IsPrimary,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            _context.EmployeePhones.Add(phone);
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+                }
 
                 return new EmployeeResponseDto
                 {
@@ -147,7 +172,10 @@ namespace EmployeeService.API.Services
         {
             try
             {
-                var employee = await _context.Employees.FindAsync(id);
+                var employee = await _context.Employees
+                    .Include(e => e.Manager)
+                    .Include(e => e.Phones)
+                    .FirstOrDefaultAsync(e => e.Id == id);
 
                 if (employee == null)
                 {
@@ -158,6 +186,7 @@ namespace EmployeeService.API.Services
                     };
                 }
 
+                // Update basic fields
                 if (updateEmployeeDto.FirstName != null)
                     employee.FirstName = updateEmployeeDto.FirstName;
 
@@ -173,19 +202,62 @@ namespace EmployeeService.API.Services
                 if (updateEmployeeDto.Age.HasValue)
                     employee.Age = updateEmployeeDto.Age.Value;
 
+                if (updateEmployeeDto.Position != null)
+                    employee.Position = updateEmployeeDto.Position;
+
+                if (updateEmployeeDto.Department != null)
+                    employee.Department = updateEmployeeDto.Department;
+
+                if (updateEmployeeDto.Salary.HasValue)
+                    employee.Salary = updateEmployeeDto.Salary.Value;
+
                 if (updateEmployeeDto.HireDate.HasValue)
                     employee.HireDate = updateEmployeeDto.HireDate.Value;
+
+                if (updateEmployeeDto.ManagerId.HasValue)
+                    employee.ManagerId = updateEmployeeDto.ManagerId.Value;
 
                 if (updateEmployeeDto.PermissionLevel.HasValue)
                     employee.PermissionLevel = updateEmployeeDto.PermissionLevel.Value;
 
+                // Update phones if provided
+                if (updateEmployeeDto.Phones != null)
+                {
+                    // Remove existing phones
+                    _context.EmployeePhones.RemoveRange(employee.Phones);
+                    
+                    // Add new phones
+                    foreach (var phoneDto in updateEmployeeDto.Phones)
+                    {
+                        if (!string.IsNullOrEmpty(phoneDto.PhoneNumber))
+                        {
+                            var phone = new EmployeePhone
+                            {
+                                EmployeeId = employee.Id,
+                                PhoneNumber = phoneDto.PhoneNumber,
+                                PhoneType = phoneDto.PhoneType ?? "Mobile",
+                                IsPrimary = phoneDto.IsPrimary ?? false,
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            _context.EmployeePhones.Add(phone);
+                        }
+                    }
+                }
+
+                employee.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+
+                // Reload employee with updated relationships
+                employee = await _context.Employees
+                    .Include(e => e.Manager)
+                    .Include(e => e.Phones)
+                    .FirstOrDefaultAsync(e => e.Id == id);
 
                 return new EmployeeResponseDto
                 {
                     Success = true,
                     Message = "Employee updated successfully",
-                    Employee = MapToEmployeeDto(employee)
+                    Employee = MapToEmployeeDto(employee!)
                 };
             }
             catch (Exception ex)
@@ -242,8 +314,22 @@ namespace EmployeeService.API.Services
                 Email = employee.Email,
                 DocNumber = employee.DocNumber,
                 Age = employee.Age,
+                Position = employee.Position,
+                Department = employee.Department,
+                Salary = employee.Salary,
                 HireDate = employee.HireDate,
-                PermissionLevel = employee.PermissionLevel
+                ManagerId = employee.ManagerId,
+                ManagerName = employee.Manager != null ? $"{employee.Manager.FirstName} {employee.Manager.LastName}" : null,
+                PermissionLevel = employee.PermissionLevel,
+                CreatedAt = employee.CreatedAt,
+                UpdatedAt = employee.UpdatedAt,
+                Phones = employee.Phones?.Select(p => new EmployeePhoneDto
+                {
+                    Id = p.Id,
+                    PhoneNumber = p.PhoneNumber,
+                    PhoneType = p.PhoneType,
+                    IsPrimary = p.IsPrimary
+                }).ToList() ?? new List<EmployeePhoneDto>()
             };
         }
     }

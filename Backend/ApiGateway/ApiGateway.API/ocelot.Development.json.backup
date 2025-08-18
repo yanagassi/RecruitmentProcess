@@ -2,41 +2,35 @@
   "Routes": [
     {
       "DownstreamPathTemplate": "/api/employees",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "employee-service",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 7018
         }
       ],
       "UpstreamPathTemplate": "/api/employees",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
-      }
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
     },
     {
       "DownstreamPathTemplate": "/api/employees/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "employee-service",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 7018
         }
       ],
       "UpstreamPathTemplate": "/api/employees/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer"
-      }
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"]
     },
     {
       "DownstreamPathTemplate": "/api/auth/{everything}",
-      "DownstreamScheme": "http",
+      "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "identity-service",
-          "Port": 80
+          "Host": "localhost",
+          "Port": 7019
         }
       ],
       "UpstreamPathTemplate": "/api/auth/{everything}",
@@ -44,6 +38,6 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "http://localhost:5001"
+    "BaseUrl": "http://localhost:5047"
   }
 }

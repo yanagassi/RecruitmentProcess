@@ -17,6 +17,8 @@ namespace IdentityService.API.Controllers
         }
 
         [HttpPost("register")]
+        [ProducesResponseType(typeof(AuthResponseDto), 200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
         {
             try
@@ -31,6 +33,8 @@ namespace IdentityService.API.Controllers
         }
 
         [HttpPost("login")]
+        [ProducesResponseType(typeof(AuthResponseDto), 200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
         {
             try
@@ -44,20 +48,22 @@ namespace IdentityService.API.Controllers
             }
         }
 
-        [HttpGet("user")]
+        // Refresh token endpoint removed - not implemented yet
+
+        [HttpGet("me")]
         [Authorize]
+        [ProducesResponseType(typeof(UserDto), 200)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
             try
             {
                 var userId = User.FindFirst("sub")?.Value;
                 if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized();
-                }
+                    return BadRequest(new { message = "Invalid token" });
 
-                var user = await _authService.GetUserByIdAsync(userId);
-                return Ok(user);
+                var response = await _authService.GetUserByIdAsync(userId);
+                return Ok(response);
             }
             catch (ApplicationException ex)
             {

@@ -13,9 +13,14 @@ const EmployeeForm = () => {
     email: '',
     docNumber: '',
     birthDate: '',
+    position: '',
+    department: '',
+    salary: '',
+    hireDate: '',
+    managerId: '',
     managerName: '',
     permissionLevel: 'Employee',
-    phones: [{ number: '' }],
+    phones: [{ phoneNumber: '', phoneType: 'Mobile', isPrimary: true }],
     password: '',
     confirmPassword: '',
   });
@@ -43,12 +48,36 @@ const EmployeeForm = () => {
           setLoading(true);
           const data = await employeeService.getById(id);
           
-          // Formatar a data para o formato esperado pelo input date
+          // Calcular birthDate a partir da idade e hireDate
+          const calculateBirthDate = (age, hireDate) => {
+            if (!age || !hireDate) return '';
+            const hire = new Date(hireDate);
+            const birthYear = hire.getFullYear() - age;
+            return `${birthYear}-01-01`; // Aproximação
+          };
+
+          // Formatar os dados para o formato esperado pelo frontend
           const formattedData = {
-            ...data,
-            birthDate: data.birthDate ? new Date(data.birthDate).toISOString().split('T')[0] : '',
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            email: data.email || '',
+            docNumber: data.docNumber || '',
+            birthDate: calculateBirthDate(data.age, data.hireDate),
+            position: data.position || '',
+            department: data.department || '',
+            salary: data.salary ? data.salary.toString() : '',
+            hireDate: data.hireDate ? new Date(data.hireDate).toISOString().split('T')[0] : '',
+            managerId: data.managerId || '',
+            managerName: data.managerName || '',
+            permissionLevel: data.permissionLevel || 'Employee',
             // Garantir que phones seja um array com pelo menos um item
-            phones: data.phones && data.phones.length > 0 ? data.phones : [{ number: '' }],
+            phones: data.phones && data.phones.length > 0 
+              ? data.phones.map(phone => ({
+                  phoneNumber: phone.phoneNumber || '',
+                  phoneType: phone.phoneType || 'Mobile',
+                  isPrimary: phone.isPrimary || false
+                }))
+              : [{ phoneNumber: '', phoneType: 'Mobile', isPrimary: true }],
             password: '',
             confirmPassword: '',
           };
@@ -71,16 +100,16 @@ const EmployeeForm = () => {
     setFormData({ ...formData, [name]: value });
   };
   
-  const handlePhoneChange = (index, value) => {
+  const handlePhoneChange = (index, field, value) => {
     const updatedPhones = [...formData.phones];
-    updatedPhones[index] = { number: value };
+    updatedPhones[index] = { ...updatedPhones[index], [field]: value };
     setFormData({ ...formData, phones: updatedPhones });
   };
   
   const addPhoneField = () => {
     setFormData({
       ...formData,
-      phones: [...formData.phones, { number: '' }],
+      phones: [...formData.phones, { phoneNumber: '', phoneType: 'Mobile', isPrimary: false }],
     });
   };
   
@@ -120,13 +149,49 @@ const EmployeeForm = () => {
     setLoading(true);
     
     try {
-      // Remover campos desnecessários antes de enviar para a API
-      const { confirmPassword, ...employeeData } = formData;
+      // Calcular idade a partir da data de nascimento
+      const calculateAge = (birthDate) => {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        
+        return age;
+      };
+
+      // Encontrar o managerId baseado no managerName
+      const findManagerId = (managerName) => {
+        if (!managerName) return null;
+        const manager = managers.find(m => `${m.firstName} ${m.lastName}` === managerName);
+        return manager ? manager.id : null;
+      };
+
+      // Converter dados do frontend para o formato do backend
+      const { confirmPassword, birthDate, managerName, ...baseData } = formData;
+      
+      const backendData = {
+        ...baseData,
+        age: calculateAge(birthDate),
+        salary: parseFloat(formData.salary) || 0,
+        hireDate: formData.hireDate ? new Date(formData.hireDate).toISOString() : new Date().toISOString(),
+        managerId: findManagerId(managerName),
+        phones: formData.phones
+          .filter(phone => phone.phoneNumber.trim() !== '')
+          .map(phone => ({
+            phoneNumber: phone.phoneNumber,
+            phoneType: phone.phoneType || 'Mobile',
+            isPrimary: phone.isPrimary || false
+          }))
+      };
       
       // Remover senha se estiver vazia no modo de edição
-      const dataToSubmit = isEditMode && !employeeData.password 
-        ? { ...employeeData, password: undefined } 
-        : employeeData;
+      const dataToSubmit = isEditMode && !backendData.password 
+        ? { ...backendData, password: undefined } 
+        : backendData;
       
       if (isEditMode) {
         await employeeService.update(id, dataToSubmit);
@@ -230,18 +295,85 @@ const EmployeeForm = () => {
           />
         </div>
         
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="birthDate">
+              Data de Nascimento *
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="birthDate"
+              type="date"
+              name="birthDate"
+              value={formData.birthDate}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="hireDate">
+              Data de Contratação *
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="hireDate"
+              type="date"
+              name="hireDate"
+              value={formData.hireDate}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="position">
+              Cargo *
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="position"
+              type="text"
+              name="position"
+              placeholder="Ex: Desenvolvedor, Analista"
+              value={formData.position}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="department">
+              Departamento
+            </label>
+            <input
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              id="department"
+              type="text"
+              name="department"
+              placeholder="Ex: TI, RH, Vendas"
+              value={formData.department}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+        
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="birthDate">
-            Data de Nascimento *
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="salary">
+            Salário
           </label>
           <input
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="birthDate"
-            type="date"
-            name="birthDate"
-            value={formData.birthDate}
+            id="salary"
+            type="number"
+            name="salary"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+            value={formData.salary}
             onChange={handleChange}
-            required
           />
         </div>
         
@@ -291,31 +423,66 @@ const EmployeeForm = () => {
             Telefones
           </label>
           {formData.phones.map((phone, index) => (
-            <div key={index} className="flex mb-2">
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                type="text"
-                placeholder="(00) 00000-0000"
-                value={phone.number}
-                onChange={(e) => handlePhoneChange(index, e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => removePhoneField(index)}
-                className="ml-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                disabled={formData.phones.length <= 1}
-              >
-                -
-              </button>
-              {index === formData.phones.length - 1 && (
+            <div key={index} className="border rounded p-3 mb-3 bg-gray-50">
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                  <label className="block text-gray-600 text-xs font-bold mb-1">
+                    Número *
+                  </label>
+                  <input
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    type="text"
+                    placeholder="(00) 00000-0000"
+                    value={phone.phoneNumber}
+                    onChange={(e) => handlePhoneChange(index, 'phoneNumber', e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-600 text-xs font-bold mb-1">
+                    Tipo
+                  </label>
+                  <select
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    value={phone.phoneType}
+                    onChange={(e) => handlePhoneChange(index, 'phoneType', e.target.value)}
+                  >
+                    <option value="Mobile">Celular</option>
+                    <option value="Home">Residencial</option>
+                    <option value="Work">Comercial</option>
+                  </select>
+                </div>
+                <div className="flex items-center">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={phone.isPrimary}
+                      onChange={(e) => handlePhoneChange(index, 'isPrimary', e.target.checked)}
+                    />
+                    <span className="text-gray-600 text-xs font-bold">Principal</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={addPhoneField}
-                  className="ml-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  onClick={() => removePhoneField(index)}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm focus:outline-none focus:shadow-outline mr-2"
+                  disabled={formData.phones.length <= 1}
                 >
-                  +
+                  Remover
                 </button>
-              )}
+                {index === formData.phones.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={addPhoneField}
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm focus:outline-none focus:shadow-outline"
+                  >
+                    Adicionar
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
