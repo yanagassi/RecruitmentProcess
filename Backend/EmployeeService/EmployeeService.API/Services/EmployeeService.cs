@@ -122,7 +122,7 @@ namespace EmployeeService.API.Services
                     Position = createEmployeeDto.Position,
                     Department = createEmployeeDto.Department,
                     Salary = createEmployeeDto.Salary,
-                    HireDate = createEmployeeDto.HireDate,
+                    HireDate = DateTime.SpecifyKind(createEmployeeDto.HireDate, DateTimeKind.Utc),
                     ManagerId = createEmployeeDto.ManagerId,
                     PermissionLevel = createEmployeeDto.PermissionLevel
                 };
@@ -130,7 +130,6 @@ namespace EmployeeService.API.Services
                 _context.Employees.Add(employee);
                 await _context.SaveChangesAsync();
 
-                // Add phones if provided
                 if (createEmployeeDto.Phones != null && createEmployeeDto.Phones.Any())
                 {
                     foreach (var phoneDto in createEmployeeDto.Phones)
@@ -212,7 +211,7 @@ namespace EmployeeService.API.Services
                     employee.Salary = updateEmployeeDto.Salary.Value;
 
                 if (updateEmployeeDto.HireDate.HasValue)
-                    employee.HireDate = updateEmployeeDto.HireDate.Value;
+                    employee.HireDate = DateTime.SpecifyKind(updateEmployeeDto.HireDate.Value, DateTimeKind.Utc);
 
                 if (updateEmployeeDto.ManagerId.HasValue)
                     employee.ManagerId = updateEmployeeDto.ManagerId.Value;
@@ -223,10 +222,8 @@ namespace EmployeeService.API.Services
                 // Update phones if provided
                 if (updateEmployeeDto.Phones != null)
                 {
-                    // Remove existing phones
                     _context.EmployeePhones.RemoveRange(employee.Phones);
                     
-                    // Add new phones
                     foreach (var phoneDto in updateEmployeeDto.Phones)
                     {
                         if (!string.IsNullOrEmpty(phoneDto.PhoneNumber))
@@ -247,7 +244,6 @@ namespace EmployeeService.API.Services
                 employee.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                // Reload employee with updated relationships
                 employee = await _context.Employees
                     .Include(e => e.Manager)
                     .Include(e => e.Phones)

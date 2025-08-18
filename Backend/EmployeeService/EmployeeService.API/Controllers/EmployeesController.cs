@@ -1,11 +1,15 @@
 using EmployeeService.API.Models.DTOs;
 using EmployeeService.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace EmployeeService.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EmployeesController : ControllerBase
     {
         private readonly IEmployeeService _employeeService;
@@ -52,15 +56,8 @@ namespace EmployeeService.API.Controllers
         [ProducesResponseType(400)]
         public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee([FromBody] CreateEmployeeDto createEmployeeDto)
         {
-            _logger.LogInformation("=== CreateEmployee method started ===");
-            _logger.LogInformation($"Received DTO: {System.Text.Json.JsonSerializer.Serialize(createEmployeeDto)}");
-            _logger.LogInformation("CreateEmployee called");
-            _logger.LogInformation($"ModelState.IsValid: {ModelState.IsValid}");
-            
             if (!ModelState.IsValid)
             {
-                var errors = string.Join(", ", ModelState.SelectMany(x => x.Value.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}")));
-                _logger.LogError($"ModelState errors: {errors}");
                 return BadRequest(ModelState);
             }
 
@@ -71,17 +68,11 @@ namespace EmployeeService.API.Controllers
                 return BadRequest(new { message = "Employee must be at least 16 years old" });
 
             // Get current user email from JWT token
-            var identityName = User.Identity?.Name;
-            var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-            var emailClaimDirect = User.FindFirst("email")?.Value;
+            var currentUserEmail = User.Identity?.Name ?? 
+                                 User.FindFirst(ClaimTypes.Email)?.Value ?? 
+                                 User.FindFirst("email")?.Value ??
+                                 User.FindFirst(JwtRegisteredClaimNames.Email)?.Value;
             
-            // Debug logging
-            _logger.LogInformation($"Identity.Name: {identityName}");
-            _logger.LogInformation($"Email claim (ClaimTypes.Email): {emailClaim}");
-            _logger.LogInformation($"Email claim (direct): {emailClaimDirect}");
-            _logger.LogInformation($"All claims: {string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"))}");
-            
-            var currentUserEmail = identityName ?? emailClaim ?? emailClaimDirect;
             if (string.IsNullOrEmpty(currentUserEmail))
                 return BadRequest(new { message = "Unable to identify current user" });
 

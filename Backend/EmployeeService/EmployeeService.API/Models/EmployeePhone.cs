@@ -20,7 +20,6 @@ namespace EmployeeService.API.Models
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
-        // Navigation property
         public Employee Employee { get; set; } = null!;
     }
 }

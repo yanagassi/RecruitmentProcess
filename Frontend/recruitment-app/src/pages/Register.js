@@ -52,17 +52,14 @@ const Register = () => {
     setLoading(true);
     
     try {
-      // Remover confirmPassword antes de enviar para a API
       const { confirmPassword, ...userData } = formData;
       
       const response = await authService.register(userData);
       
-      // Se o registro retornar token e usuário, fazer login automaticamente
       if (response.token && response.user) {
         login(response.user, response.token);
         navigate('/');
       } else {
-        // Caso contrário, redirecionar para a página de login
         navigate('/login', { state: { message: 'Registro realizado com sucesso! Faça login para continuar.' } });
       }
     } catch (err) {

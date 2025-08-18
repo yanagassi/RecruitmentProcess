@@ -30,7 +30,6 @@ const EmployeeForm = () => {
   const [managers, setManagers] = useState([]);
   
   useEffect(() => {
-  
     const fetchManagers = async () => {
       try {
         const data = await employeeService.getAll();
@@ -42,12 +41,11 @@ const EmployeeForm = () => {
     
     fetchManagers();
     
-    if (id) {
+    if (isEditMode && id) {
       const fetchEmployee = async () => {
         try {
           setLoading(true);
           const data = await employeeService.getById(id);
-          
           // Calcular birthDate a partir da idade e hireDate
           const calculateBirthDate = (age, hireDate) => {
             if (!age || !hireDate) return '';
@@ -69,7 +67,7 @@ const EmployeeForm = () => {
             hireDate: data.hireDate ? new Date(data.hireDate).toISOString().split('T')[0] : '',
             managerId: data.managerId || '',
             managerName: data.managerName || '',
-            permissionLevel: data.permissionLevel || 'Employee',
+            permissionLevel: data.permissionLevel === 1 ? 'Employee' : data.permissionLevel === 2 ? 'Leader' : data.permissionLevel === 3 ? 'Director' : 'Employee',
             // Garantir que phones seja um array com pelo menos um item
             phones: data.phones && data.phones.length > 0 
               ? data.phones.map(phone => ({
@@ -121,6 +119,7 @@ const EmployeeForm = () => {
   };
   
   const validateAge = (birthDate) => {
+    if (!birthDate) return false;
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
@@ -130,7 +129,7 @@ const EmployeeForm = () => {
       age--;
     }
     
-    return age >= 18;
+    return age >= 16; // Mudando para 16 anos conforme validação do backend
   };
   
   const handleSubmit = async (e) => {
@@ -142,7 +141,7 @@ const EmployeeForm = () => {
     }
     
     if (!validateAge(formData.birthDate)) {
-      setError('O funcionário deve ter pelo menos 18 anos');
+      setError('O funcionário deve ter pelo menos 16 anos');
       return;
     }
     
@@ -173,9 +172,11 @@ const EmployeeForm = () => {
       // Converter dados do frontend para o formato do backend
       const { confirmPassword, birthDate, managerName, ...baseData } = formData;
       
+      const calculatedAge = calculateAge(birthDate);
+      
       const backendData = {
         ...baseData,
-        age: calculateAge(birthDate),
+        age: calculatedAge >= 16 ? calculatedAge : 18, // Garantir idade mínima
         salary: parseFloat(formData.salary) || 0,
         hireDate: formData.hireDate ? new Date(formData.hireDate).toISOString() : new Date().toISOString(),
         managerId: findManagerId(managerName),
@@ -194,7 +195,9 @@ const EmployeeForm = () => {
         : backendData;
       
       if (isEditMode) {
-        await employeeService.update(id, dataToSubmit);
+        console.log('Enviando dados para update:', dataToSubmit);
+        const result = await employeeService.update(id, dataToSubmit);
+        console.log('Resultado do update:', result);
       } else {
         await employeeService.create(dataToSubmit);
       }

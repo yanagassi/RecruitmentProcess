@@ -52,7 +52,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         ClockSkew = TimeSpan.Zero,
-        NameClaimType = ClaimTypes.Email
+        NameClaimType = "email"
     };
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { employeeService } from '../services/api';
 
 const EmployeeList = () => {
@@ -7,15 +7,39 @@ const EmployeeList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+  const [viewMode, setViewMode] = useState('table');
+  const location = useLocation();
 
   useEffect(() => {
     fetchEmployees();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchEmployees();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchEmployees();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchEmployees = async () => {
+    console.log('EmployeeList - fetchEmployees chamado');
     try {
       const data = await employeeService.getAll();
+      console.log('EmployeeList - dados recebidos:', data);
       setEmployees(data);
       setError('');
     } catch (err) {

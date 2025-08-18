@@ -27,7 +27,6 @@ const Login = () => {
       const { email, password } = formData;
       const response = await authService.login(email, password);
       
-      // Usar o contexto de autenticação para fazer login
       authLogin(response.user, response.token);
       
       navigate('/');

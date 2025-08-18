@@ -49,14 +49,80 @@ export const employeeService = {
   },
   getById: async (id) => {
     const response = await api.get(`/employees/${id}`);
-    return response.data;
+    return response.data.employee;
   },
   create: async (employeeData) => {
-    const response = await api.post('/employees', employeeData);
+    console.log('API create - dados recebidos:', employeeData);
+    
+    // Converter permissionLevel de string para número
+    const permissionLevelMap = {
+      'Employee': 1,
+      'Leader': 2,
+      'Director': 3
+    };
+
+    // Preparar dados no formato esperado pelo backend
+    const createEmployeeDto = {
+      firstName: employeeData.firstName || '',
+      lastName: employeeData.lastName || '',
+      email: employeeData.email || '',
+      docNumber: employeeData.docNumber || '',
+      age: employeeData.age ? parseInt(employeeData.age) : 18,
+      position: employeeData.position || '',
+      department: employeeData.department || '',
+      salary: employeeData.salary ? parseFloat(employeeData.salary) : 0,
+      hireDate: employeeData.hireDate ? new Date(employeeData.hireDate).toISOString() : new Date().toISOString(),
+      managerId: employeeData.managerId ? parseInt(employeeData.managerId) : null,
+      permissionLevel: permissionLevelMap[employeeData.permissionLevel] ?? 1,
+      phones: employeeData.phones?.map(phone => ({
+        phoneNumber: phone.phoneNumber,
+        phoneType: phone.phoneType,
+        isPrimary: phone.isPrimary
+      })) || []
+    };
+
+    console.log('API create - dados formatados:', createEmployeeDto);
+    console.log('API create - enviando para:', '/employees');
+
+    const response = await api.post('/employees', { createEmployeeDto });
+    console.log('API create - resposta:', response.data);
     return response.data;
   },
   update: async (id, employeeData) => {
-    const response = await api.put(`/employees/${id}`, employeeData);
+    console.log('API update - dados recebidos:', employeeData);
+    
+    // Converter permissionLevel de string para número
+    const permissionLevelMap = {
+      'Employee': 1,
+      'Leader': 2,
+      'Director': 3
+    };
+
+    // Preparar dados no formato esperado pelo backend
+    const updateEmployeeDto = {
+      firstName: employeeData.firstName,
+      lastName: employeeData.lastName,
+      email: employeeData.email,
+      docNumber: employeeData.docNumber,
+      age: employeeData.age ? parseInt(employeeData.age) : null,
+      position: employeeData.position,
+      department: employeeData.department,
+      salary: employeeData.salary ? parseFloat(employeeData.salary) : null,
+      hireDate: employeeData.hireDate ? new Date(employeeData.hireDate).toISOString() : null,
+      managerId: employeeData.managerId ? parseInt(employeeData.managerId) : null,
+      permissionLevel: permissionLevelMap[employeeData.permissionLevel] ?? 1,
+      phones: employeeData.phones?.map(phone => ({
+        phoneNumber: phone.phoneNumber,
+        phoneType: phone.phoneType,
+        isPrimary: phone.isPrimary
+      })) || []
+    };
+
+    console.log('API update - dados formatados:', updateEmployeeDto);
+    console.log('API update - enviando para:', `/employees/${id}`);
+
+    const response = await api.put(`/employees/${id}`, { updateEmployeeDto });
+    console.log('API update - resposta:', response.data);
     return response.data;
   },
   delete: async (id) => {
