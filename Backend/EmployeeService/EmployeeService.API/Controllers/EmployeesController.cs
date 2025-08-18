@@ -17,6 +17,8 @@ namespace EmployeeService.API.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(EmployeeListResponseDto), 200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<EmployeeListResponseDto>> GetAllEmployees()
         {
             var response = await _employeeService.GetAllEmployeesAsync();
@@ -28,6 +30,9 @@ namespace EmployeeService.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(EmployeeResponseDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public async Task<IActionResult> GetEmployeeById(int id)
         {
             if (id <= 0)
@@ -42,6 +47,9 @@ namespace EmployeeService.API.Controllers
         }
 
         [HttpPost]
+        [Authorize]
+        [ProducesResponseType(typeof(EmployeeResponseDto), 201)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<EmployeeResponseDto>> CreateEmployee([FromBody] CreateEmployeeDto createEmployeeDto)
         {
             if (!ModelState.IsValid)
@@ -53,7 +61,12 @@ namespace EmployeeService.API.Controllers
             if (createEmployeeDto.Age < 16)
                 return BadRequest(new { message = "Employee must be at least 16 years old" });
 
-            var response = await _employeeService.CreateEmployeeAsync(createEmployeeDto);
+            // Get current user email from JWT token
+            var currentUserEmail = User.FindFirst("email")?.Value;
+            if (string.IsNullOrEmpty(currentUserEmail))
+                return BadRequest(new { message = "Unable to identify current user" });
+
+            var response = await _employeeService.CreateEmployeeAsync(createEmployeeDto, currentUserEmail);
 
             if (!response.Success)
                 return BadRequest(response);
@@ -62,6 +75,10 @@ namespace EmployeeService.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
+        [ProducesResponseType(typeof(EmployeeResponseDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public async Task<ActionResult<EmployeeResponseDto>> UpdateEmployee(int id, [FromBody] UpdateEmployeeDto updateEmployeeDto)
         {
             if (id <= 0)
@@ -82,7 +99,6 @@ namespace EmployeeService.API.Controllers
             {
                 if (response.Message.Contains("not found"))
                     return NotFound(response);
-
                 return BadRequest(response);
             }
 
@@ -90,6 +106,9 @@ namespace EmployeeService.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(typeof(EmployeeResponseDto), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public async Task<ActionResult<EmployeeResponseDto>> DeleteEmployee(int id)
         {
             if (id <= 0)
@@ -101,7 +120,6 @@ namespace EmployeeService.API.Controllers
             {
                 if (response.Message.Contains("not found"))
                     return NotFound(response);
-
                 return BadRequest(response);
             }
 

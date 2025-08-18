@@ -41,8 +41,8 @@ const EmployeeList = () => {
   const filteredEmployees = employees.filter(employee =>
     `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department?.toLowerCase().includes(searchTerm.toLowerCase())
+    employee.docNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.permissionLevel?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -156,10 +156,10 @@ const EmployeeList = () => {
                       Funcionário
                     </th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                      Cargo
+                      Documento
                     </th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Departamento
+                      Nível
                     </th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                       Telefone
@@ -188,15 +188,15 @@ const EmployeeList = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                        <div className="text-sm text-gray-900">{employee.position || 'N/A'}</div>
+                        <div className="text-sm text-gray-900">{employee.docNumber || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
                         <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {employee.department || 'N/A'}
+                          {employee.permissionLevel || 'Employee'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                        {employee.phone || 'N/A'}
+                        {employee.phones && employee.phones.length > 0 ? employee.phones[0].phoneNumber : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">

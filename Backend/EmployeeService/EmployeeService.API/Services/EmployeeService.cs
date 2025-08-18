@@ -1,6 +1,7 @@
 using EmployeeService.API.Data;
 using EmployeeService.API.Models;
 using EmployeeService.API.Models.DTOs;
+using EmployeeService.API.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeService.API.Services
@@ -9,7 +10,7 @@ namespace EmployeeService.API.Services
     {
         Task<EmployeeListResponseDto> GetAllEmployeesAsync();
         Task<EmployeeResponseDto> GetEmployeeByIdAsync(int id);
-        Task<EmployeeResponseDto> CreateEmployeeAsync(CreateEmployeeDto createEmployeeDto);
+        Task<EmployeeResponseDto> CreateEmployeeAsync(CreateEmployeeDto createEmployeeDto, string currentUserEmail);
         Task<EmployeeResponseDto> UpdateEmployeeAsync(int id, UpdateEmployeeDto updateEmployeeDto);
         Task<EmployeeResponseDto> DeleteEmployeeAsync(int id);
     }
@@ -43,7 +44,6 @@ namespace EmployeeService.API.Services
                 {
                     Success = false,
                     Message = $"Error retrieving employees: {ex.Message}"
-                    // Employees já tem um valor padrão (new List<EmployeeDto>())
                 };
             }
         }
@@ -59,8 +59,7 @@ namespace EmployeeService.API.Services
                     return new EmployeeResponseDto
                     {
                         Success = false,
-                        Message = $"Employee with ID {id} not found"
-                        // Employee já é nullable
+                        Message = "Employee not found"
                     };
                 }
 
@@ -77,23 +76,40 @@ namespace EmployeeService.API.Services
                 {
                     Success = false,
                     Message = $"Error retrieving employee: {ex.Message}"
-                    // Employee já é nullable
                 };
             }
         }
 
-        public async Task<EmployeeResponseDto> CreateEmployeeAsync(CreateEmployeeDto createEmployeeDto)
+        public async Task<EmployeeResponseDto> CreateEmployeeAsync(CreateEmployeeDto createEmployeeDto, string currentUserEmail)
         {
             try
             {
-                if (await _context.Employees.AnyAsync(e => e.Email == createEmployeeDto.Email))
+                var existingEmployee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.DocNumber == createEmployeeDto.DocNumber);
+
+                if (existingEmployee != null)
                 {
                     return new EmployeeResponseDto
                     {
                         Success = false,
-                        Message = $"Employee with email {createEmployeeDto.Email} already exists"
-                        // Employee já é nullable
+                        Message = "An employee with this document number already exists"
                     };
+                }
+
+                var currentUser = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.Email == currentUserEmail);
+
+                if (currentUser != null)
+                {
+                    if ((currentUser.PermissionLevel == PermissionLevel.Employee && createEmployeeDto.PermissionLevel != PermissionLevel.Employee) ||
+                        (currentUser.PermissionLevel == PermissionLevel.Leader && createEmployeeDto.PermissionLevel == PermissionLevel.Director))
+                    {
+                        return new EmployeeResponseDto
+                        {
+                            Success = false,
+                            Message = "You don't have permission to create an employee with this permission level"
+                        };
+                    }
                 }
 
                 var employee = new Employee
@@ -101,13 +117,10 @@ namespace EmployeeService.API.Services
                     FirstName = createEmployeeDto.FirstName,
                     LastName = createEmployeeDto.LastName,
                     Email = createEmployeeDto.Email,
-                    Phone = createEmployeeDto.Phone,
+                    DocNumber = createEmployeeDto.DocNumber,
                     Age = createEmployeeDto.Age,
-                    Position = createEmployeeDto.Position,
-                    Department = createEmployeeDto.Department,
-                    Salary = createEmployeeDto.Salary,
                     HireDate = createEmployeeDto.HireDate,
-                    CreatedAt = DateTime.UtcNow
+                    PermissionLevel = createEmployeeDto.PermissionLevel
                 };
 
                 _context.Employees.Add(employee);
@@ -126,7 +139,6 @@ namespace EmployeeService.API.Services
                 {
                     Success = false,
                     Message = $"Error creating employee: {ex.Message}"
-                    // Employee já é nullable
                 };
             }
         }
@@ -142,52 +154,30 @@ namespace EmployeeService.API.Services
                     return new EmployeeResponseDto
                     {
                         Success = false,
-                        Message = $"Employee with ID {id} not found"
-                        // Employee já é nullable
+                        Message = "Employee not found"
                     };
                 }
 
-                if (!string.IsNullOrEmpty(updateEmployeeDto.Email) && 
-                    updateEmployeeDto.Email != employee.Email && 
-                    await _context.Employees.AnyAsync(e => e.Email == updateEmployeeDto.Email))
-                {
-                    return new EmployeeResponseDto
-                    {
-                        Success = false,
-                        Message = $"Employee with email {updateEmployeeDto.Email} already exists"
-                        // Employee já é nullable
-                    };
-                }
-
-                // Update only the properties that are provided
-                if (!string.IsNullOrEmpty(updateEmployeeDto.FirstName))
+                if (updateEmployeeDto.FirstName != null)
                     employee.FirstName = updateEmployeeDto.FirstName;
 
-                if (!string.IsNullOrEmpty(updateEmployeeDto.LastName))
+                if (updateEmployeeDto.LastName != null)
                     employee.LastName = updateEmployeeDto.LastName;
 
-                if (!string.IsNullOrEmpty(updateEmployeeDto.Email))
+                if (updateEmployeeDto.Email != null)
                     employee.Email = updateEmployeeDto.Email;
 
-                if (!string.IsNullOrEmpty(updateEmployeeDto.Phone))
-                    employee.Phone = updateEmployeeDto.Phone;
+                if (updateEmployeeDto.DocNumber != null)
+                    employee.DocNumber = updateEmployeeDto.DocNumber;
 
                 if (updateEmployeeDto.Age.HasValue)
                     employee.Age = updateEmployeeDto.Age.Value;
 
-                if (!string.IsNullOrEmpty(updateEmployeeDto.Position))
-                    employee.Position = updateEmployeeDto.Position;
-
-                if (updateEmployeeDto.Department != null)
-                    employee.Department = updateEmployeeDto.Department;
-
-                if (updateEmployeeDto.Salary.HasValue)
-                    employee.Salary = updateEmployeeDto.Salary.Value;
-
                 if (updateEmployeeDto.HireDate.HasValue)
                     employee.HireDate = updateEmployeeDto.HireDate.Value;
 
-                employee.UpdatedAt = DateTime.UtcNow;
+                if (updateEmployeeDto.PermissionLevel.HasValue)
+                    employee.PermissionLevel = updateEmployeeDto.PermissionLevel.Value;
 
                 await _context.SaveChangesAsync();
 
@@ -204,7 +194,6 @@ namespace EmployeeService.API.Services
                 {
                     Success = false,
                     Message = $"Error updating employee: {ex.Message}"
-                    // Employee já é nullable
                 };
             }
         }
@@ -220,8 +209,7 @@ namespace EmployeeService.API.Services
                     return new EmployeeResponseDto
                     {
                         Success = false,
-                        Message = $"Employee with ID {id} not found"
-                        // Employee já é nullable
+                        Message = "Employee not found"
                     };
                 }
 
@@ -232,7 +220,6 @@ namespace EmployeeService.API.Services
                 {
                     Success = true,
                     Message = "Employee deleted successfully"
-                    // Employee já é nullable e deve permanecer null após exclusão
                 };
             }
             catch (Exception ex)
@@ -241,7 +228,6 @@ namespace EmployeeService.API.Services
                 {
                     Success = false,
                     Message = $"Error deleting employee: {ex.Message}"
-                    // Employee já é nullable
                 };
             }
         }
@@ -254,14 +240,10 @@ namespace EmployeeService.API.Services
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
                 Email = employee.Email,
-                Phone = employee.Phone,
+                DocNumber = employee.DocNumber,
                 Age = employee.Age,
-                Position = employee.Position,
-                Department = employee.Department,
-                Salary = employee.Salary,
                 HireDate = employee.HireDate,
-                CreatedAt = employee.CreatedAt,
-                UpdatedAt = employee.UpdatedAt
+                PermissionLevel = employee.PermissionLevel
             };
         }
     }

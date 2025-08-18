@@ -27,7 +27,7 @@ namespace EmployeeService.API.Services
         {
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
-                return null; // User already exists
+                return null;
             }
 
             var user = new User
@@ -62,10 +62,9 @@ namespace EmployeeService.API.Services
 
             if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
             {
-                return null; // Invalid credentials
+                return null;
             }
 
-            // Generate JWT token
             var token = GenerateJwtToken(user.Email, user.FirstName, user.LastName);
             var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes);
 

@@ -8,8 +8,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/identity-service-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+// Add Serilog
+builder.Host.UseSerilog();
 
 // Configure DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -78,7 +90,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Identity Service API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Identity Service API", 
+        Version = "v1",
+        Description = "API for authentication and authorization in the recruitment system",
+        Contact = new OpenApiContact
+        {
+            Name = "Development Team",
+            Email = "dev@company.com"
+        }
+    });
     
     // Configure Swagger to use JWT Authentication
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -177,9 +199,22 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
+        Log.Error(ex, "An error occurred while migrating or seeding the database");
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating or seeding the database.");
     }
 }
 
-app.Run();
+try
+{
+    Log.Information("Starting Identity Service");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Identity Service terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

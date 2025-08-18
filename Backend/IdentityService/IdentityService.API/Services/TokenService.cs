@@ -19,6 +19,15 @@ namespace IdentityService.API.Services
 
         public string GenerateJwtToken(ApplicationUser user)
         {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+            
+            if (string.IsNullOrEmpty(user.Id))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(user));
+            
+            if (string.IsNullOrEmpty(user.Email))
+                throw new ArgumentException("User email cannot be null or empty", nameof(user));
+
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
 
@@ -27,8 +36,8 @@ namespace IdentityService.API.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("firstName", user.FirstName),
-                new Claim("lastName", user.LastName)
+                new Claim("firstName", user.FirstName ?? string.Empty),
+                new Claim("lastName", user.LastName ?? string.Empty)
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor

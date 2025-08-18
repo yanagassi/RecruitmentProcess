@@ -14,6 +14,7 @@ const EmployeeForm = () => {
     docNumber: '',
     birthDate: '',
     managerName: '',
+    permissionLevel: 'Employee',
     phones: [{ number: '' }],
     password: '',
     confirmPassword: '',
@@ -264,6 +265,24 @@ const EmployeeForm = () => {
                 {manager.firstName} {manager.lastName}
               </option>
             ))}
+          </select>
+        </div>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="permissionLevel">
+            Nível de Permissão *
+          </label>
+          <select
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            id="permissionLevel"
+            name="permissionLevel"
+            value={formData.permissionLevel}
+            onChange={handleChange}
+            required
+          >
+            <option value="Employee">Funcionário</option>
+            <option value="Leader">Líder</option>
+            <option value="Director">Diretor</option>
           </select>
         </div>
         

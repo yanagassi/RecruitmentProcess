@@ -92,6 +92,19 @@ services:
     volumes:
       - ../Backend/ApiGateway/ApiGateway.API/ocelot.json:/app/ocelot.json
 
+  # React Frontend
+  frontend:
+    build:
+      context: ../Frontend/recruitment-app
+      dockerfile: Dockerfile
+    container_name: recruitment_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - recruitment-network
+
 volumes:
   employee_data:
   identity_data:

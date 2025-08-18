@@ -6,8 +6,20 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/employee-service-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+// Add Serilog
+builder.Host.UseSerilog();
 
 // Configure DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -63,7 +75,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Employee Service API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Employee Service API", 
+        Version = "v1",
+        Description = "API for managing employees in the recruitment system",
+        Contact = new OpenApiContact
+        {
+            Name = "Development Team",
+            Email = "dev@company.com"
+        }
+    });
 
     // Configure Swagger to use JWT Authentication
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -119,12 +141,26 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
+        Log.Information("Database migration completed successfully");
     }
     catch (Exception ex)
     {
+        Log.Error(ex, "An error occurred while migrating or seeding the database");
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while migrating or seeding the database.");
     }
 }
 
-app.Run();
+try
+{
+    Log.Information("Starting Employee Service");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Employee Service terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
