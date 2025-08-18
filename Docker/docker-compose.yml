@@ -1,0 +1,102 @@
+version: "3.8"
+
+services:
+  # PostgreSQL para EmployeeService
+  employee-db:
+    image: postgres:15
+    container_name: employee_db
+    environment:
+      POSTGRES_DB: EmployeeServiceDB
+      POSTGRES_USER: employeeuser
+      POSTGRES_PASSWORD: Employee@123
+    ports:
+      - "5434:5432"
+    volumes:
+      - employee_data:/var/lib/postgresql/data
+    networks:
+      - recruitment-network
+
+  # PostgreSQL para IdentityService
+  identity-db:
+    image: postgres:15
+    container_name: identity_db
+    environment:
+      POSTGRES_DB: IdentityServiceDB
+      POSTGRES_USER: identityuser
+      POSTGRES_PASSWORD: Identity@123
+    ports:
+      - "5433:5432"
+    volumes:
+      - identity_data:/var/lib/postgresql/data
+    networks:
+      - recruitment-network
+
+  # Redis para cache (opcional)
+  redis:
+    image: redis:7-alpine
+    container_name: recruitment_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - recruitment-network
+
+  # EmployeeService API
+  employee-service:
+    build:
+      context: ../Backend/EmployeeService/EmployeeService.API
+      dockerfile: Dockerfile
+    container_name: employee_service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=employee-db;Database=EmployeeServiceDB;Username=employeeuser;Password=Employee@123;Port=5432
+    ports:
+      - "5022:80"
+    depends_on:
+      - employee-db
+    networks:
+      - recruitment-network
+
+  # IdentityService API
+  identity-service:
+    build:
+      context: ../Backend/IdentityService/IdentityService.API
+      dockerfile: Dockerfile
+    container_name: identity_service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=identity-db;Database=IdentityServiceDB;Username=identityuser;Password=Identity@123;Port=5432
+    ports:
+      - "5047:80"
+    depends_on:
+      - identity-db
+    networks:
+      - recruitment-network
+
+  # ApiGateway
+  api-gateway:
+    build:
+      context: ../Backend/ApiGateway/ApiGateway.API
+      dockerfile: Dockerfile
+    container_name: api_gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "5001:80"
+    depends_on:
+      - employee-service
+      - identity-service
+    networks:
+      - recruitment-network
+    volumes:
+      - ../Backend/ApiGateway/ApiGateway.API/ocelot.json:/app/ocelot.json
+
+volumes:
+  employee_data:
+  identity_data:
+  redis_data:
+
+networks:
+  recruitment-network:
+    driver: bridge
