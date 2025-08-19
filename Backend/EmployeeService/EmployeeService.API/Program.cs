@@ -15,7 +15,6 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -23,14 +22,11 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File("logs/employee-service-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
-// Add Serilog
 builder.Host.UseSerilog();
 
-// Configure DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
 
@@ -56,11 +52,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Register Services
 builder.Services.AddScoped<IEmployeeService, EmployeeService.API.Services.EmployeeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", builder =>
@@ -79,10 +73,9 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// Authentication and Authorization
 builder.Services.AddAuthorization();
 
-// Configure Swagger
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -98,7 +91,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    // Configure Swagger to use JWT Authentication
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
@@ -126,7 +118,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -135,16 +126,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Use CORS
 app.UseCors("AllowReactApp");
 
-// Add authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Create database and apply migrations if they don't exist
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

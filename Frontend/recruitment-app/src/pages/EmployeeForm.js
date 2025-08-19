@@ -66,7 +66,6 @@ const EmployeeForm = () => {
     }
   };
 
-  // Função para validar um campo específico
   const validateField = (name, value) => {
     let error = '';
     
@@ -128,7 +127,6 @@ const EmployeeForm = () => {
     const { name, value } = e.target;
     let formattedValue = value;
     
-    // Aplicar máscaras
     switch (name) {
       case 'docNumber':
         formattedValue = formatCPF(value);
@@ -143,7 +141,6 @@ const EmployeeForm = () => {
       [name]: formattedValue,
     }));
     
-    // Validar campo se já foi tocado
     if (touched[name]) {
       const error = validateField(name, formattedValue);
       setFieldErrors(prev => ({
@@ -171,7 +168,6 @@ const EmployeeForm = () => {
   const handlePhoneChange = (index, field, value) => {
     let formattedValue = value;
     
-    // Aplicar máscara para número de telefone
     if (field === 'phoneNumber') {
       formattedValue = formatPhone(value);
     }
@@ -188,7 +184,6 @@ const EmployeeForm = () => {
       phones: updatedPhones,
     }));
     
-    // Validar telefone se necessário
     if (field === 'phoneNumber' && touched[`phone-${index}`]) {
       const error = !formattedValue.trim() ? '' : !isValidPhone(formattedValue) ? 'Telefone inválido' : '';
       setFieldErrors(prev => ({
@@ -234,7 +229,6 @@ const EmployeeForm = () => {
     e.preventDefault();
     setError("");
     
-    // Validar todos os campos
     const errors = {};
     const requiredFields = ['firstName', 'lastName', 'email', 'docNumber', 'age', 'position', 'department', 'salary'];
     
@@ -245,14 +239,12 @@ const EmployeeForm = () => {
       }
     });
     
-    // Validar telefones
     formData.phones.forEach((phone, index) => {
       if (phone.phoneNumber.trim() && !isValidPhone(phone.phoneNumber)) {
         errors[`phone-${index}`] = 'Telefone inválido';
       }
     });
     
-    // Verificar se há pelo menos um telefone válido
     const validPhones = formData.phones.filter(phone => phone.phoneNumber.trim() !== '');
     if (validPhones.length === 0) {
       errors.phones = 'Pelo menos um telefone é obrigatório';
@@ -268,7 +260,6 @@ const EmployeeForm = () => {
     setLoading(true);
 
     try {
-      // Filtrar telefones vazios e converter para o formato esperado pelo backend
       const phones = formData.phones
         .filter((phone) => phone.phoneNumber.trim() !== "")
         .map((phone) => ({

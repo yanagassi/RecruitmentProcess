@@ -9,8 +9,8 @@ const Login = () => {
   const { login: authLogin } = useAuth();
   const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: 'admin@admin.com',
+    password: 'Admin123!',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

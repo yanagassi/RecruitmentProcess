@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -8,7 +8,6 @@ namespace EmployeeService.API.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Inserir funcionários de exemplo
             migrationBuilder.InsertData(
                 table: "Employees",
                 columns: new[] { "Id", "FirstName", "LastName", "Email", "Phone", "Age", "Position", "Department", "Salary", "HireDate", "CreatedAt" },
@@ -98,7 +97,6 @@ namespace EmployeeService.API.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Remover funcionários de exemplo
             migrationBuilder.DeleteData(
                 table: "Employees",
                 keyColumn: "Id",

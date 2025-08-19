@@ -13,7 +13,11 @@ Um sistema completo de gestão de funcionários desenvolvido com arquitetura de 
 - [Banco de Dados](#banco-de-dados)
 - [Autenticação](#autenticação)
 - [Testes](#testes)
-- [Documentação da API](#documentação-da-api)
+- [Evidências de Teste](#evidências-de-teste)
+- [Documentação da API](#-documentação-da-api)
+- [Configurações](#configurações)
+- [Logs](#logs)
+- [Licença](#licença)
 
 ## Sobre o Projeto
 
@@ -337,6 +341,19 @@ dotnet test
 - **Services:** 85%+
 - **Controllers:** 80%+
 - **Models/DTOs:** 90%+
+
+### Evidências de Teste
+
+Abaixo estão as evidências dos testes realizados no sistema:
+
+#### Evidência de Teste 1
+![Evidência de Teste 1](Docker/evidencia_teste_1.png)
+
+#### Evidência de Teste 2
+![Evidência de Teste 2](Docker/evidencia_teste_2.png)
+
+#### Evidência de Teste 3
+![Evidência de Teste 3](Docker/evidencia_teste_3.png)
 
 ## 📚 Documentação da API
 

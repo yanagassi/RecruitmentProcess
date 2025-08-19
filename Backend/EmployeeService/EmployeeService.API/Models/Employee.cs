@@ -38,7 +38,6 @@ namespace EmployeeService.API.Models
 
         public DateTime HireDate { get; set; }
 
-        // Manager relationship - self-referencing
         public int? ManagerId { get; set; }
         public Employee? Manager { get; set; }
 

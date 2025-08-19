@@ -196,7 +196,6 @@ namespace EmployeeService.API.Services
 
                 if (updateEmployeeDto.DocNumber != null)
                 {
-                    // Check if another employee already has this DocNumber
                     var existingEmployee = await _context.Employees
                         .FirstOrDefaultAsync(e => e.DocNumber == updateEmployeeDto.DocNumber && e.Id != id);
                     

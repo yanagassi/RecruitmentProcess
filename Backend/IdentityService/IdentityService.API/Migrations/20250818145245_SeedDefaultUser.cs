@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -8,7 +8,6 @@ namespace IdentityService.API.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Criar usuário padrão
             var userId = Guid.NewGuid().ToString();
             var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<object>();
             var passwordHash = hasher.HashPassword(null, "Admin123!");
@@ -22,12 +21,10 @@ namespace IdentityService.API.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Remover usuário padrão
             migrationBuilder.DeleteData(
                 table: "AspNetUsers",
-                keyColumn: "Email",
-                keyValue: "admin@admin.com"
-            );
+                keyColumn: "Id",
+                keyValue: "admin-user-id");
         }
     }
 }

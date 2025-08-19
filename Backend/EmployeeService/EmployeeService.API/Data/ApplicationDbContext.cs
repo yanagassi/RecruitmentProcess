@@ -33,21 +33,18 @@ namespace EmployeeService.API.Data
                 .Property(e => e.Salary)
                 .HasPrecision(18, 2);
 
-            // Configure Employee-Manager relationship
             modelBuilder.Entity<Employee>()
                 .HasOne(e => e.Manager)
                 .WithMany(e => e.Subordinates)
                 .HasForeignKey(e => e.ManagerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Configure Employee-Phone relationship
             modelBuilder.Entity<EmployeePhone>()
                 .HasOne(p => p.Employee)
                 .WithMany(e => e.Phones)
                 .HasForeignKey(p => p.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Seed initial data
             modelBuilder.Entity<Employee>().HasData(
                 new Employee
                 {
@@ -82,7 +79,6 @@ namespace EmployeeService.API.Data
                 }
             );
 
-            // Seed phone data
             modelBuilder.Entity<EmployeePhone>().HasData(
                 new EmployeePhone
                 {
