@@ -44,7 +44,7 @@ namespace IdentityService.Tests.Services
         }
 
         [Fact]
-        public async Task RegisterAsync_WithValidData_ShouldReturnSuccessResult()
+        public async Task RegisterAsync_WithValidData_ShouldReturnAuthResponse()
         {
             var registerDto = new RegisterDto
             {
@@ -60,17 +60,19 @@ namespace IdentityService.Tests.Services
             _userManagerMock.Setup(x => x.CreateAsync(It.IsAny<ApplicationUser>(), registerDto.Password))
                 .ReturnsAsync(IdentityResult.Success);
 
-            _userManagerMock.Setup(x => x.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"))
-                .ReturnsAsync(IdentityResult.Success);
+            _tokenServiceMock.Setup(x => x.GenerateJwtToken(It.IsAny<ApplicationUser>()))
+                .Returns("test-jwt-token");
 
             var result = await _authService.RegisterAsync(registerDto);
 
-            Assert.True(result.Success);
-            Assert.Equal("User registered successfully", result.Message);
+            Assert.NotNull(result);
+            Assert.Equal("test-jwt-token", result.Token);
+            Assert.NotNull(result.User);
+            Assert.Equal("test@example.com", result.User.Email);
         }
 
         [Fact]
-        public async Task RegisterAsync_WithExistingEmail_ShouldReturnFailureResult()
+        public async Task RegisterAsync_WithExistingEmail_ShouldThrowException()
         {
             var registerDto = new RegisterDto
             {
@@ -84,14 +86,12 @@ namespace IdentityService.Tests.Services
             _userManagerMock.Setup(x => x.FindByEmailAsync(registerDto.Email))
                 .ReturnsAsync(existingUser);
 
-            var result = await _authService.RegisterAsync(registerDto);
-
-            Assert.False(result.Success);
-            Assert.Equal("User with this email already exists", result.Message);
+            var exception = await Assert.ThrowsAsync<ApplicationException>(() => _authService.RegisterAsync(registerDto));
+            Assert.Equal("User with this email already exists", exception.Message);
         }
 
         [Fact]
-        public async Task LoginAsync_WithValidCredentials_ShouldReturnSuccessWithToken()
+        public async Task LoginAsync_WithValidCredentials_ShouldReturnAuthResponse()
         {
             var loginDto = new LoginDto
             {
@@ -113,17 +113,19 @@ namespace IdentityService.Tests.Services
             _userManagerMock.Setup(x => x.CheckPasswordAsync(user, loginDto.Password))
                 .ReturnsAsync(true);
 
-            _tokenServiceMock.Setup(x => x.GenerateToken(user))
+            _tokenServiceMock.Setup(x => x.GenerateJwtToken(user))
                 .Returns("test-jwt-token");
 
             var result = await _authService.LoginAsync(loginDto);
 
-            Assert.True(result.Success);
+            Assert.NotNull(result);
             Assert.Equal("test-jwt-token", result.Token);
+            Assert.NotNull(result.User);
+            Assert.Equal("test@example.com", result.User.Email);
         }
 
         [Fact]
-        public async Task LoginAsync_WithInvalidCredentials_ShouldReturnFailureResult()
+        public async Task LoginAsync_WithInvalidCredentials_ShouldThrowException()
         {
             var loginDto = new LoginDto
             {
@@ -134,14 +136,12 @@ namespace IdentityService.Tests.Services
             _userManagerMock.Setup(x => x.FindByEmailAsync(loginDto.Email))
                 .ReturnsAsync((ApplicationUser)null);
 
-            var result = await _authService.LoginAsync(loginDto);
-
-            Assert.False(result.Success);
-            Assert.Equal("Invalid email or password", result.Message);
+            var exception = await Assert.ThrowsAsync<ApplicationException>(() => _authService.LoginAsync(loginDto));
+            Assert.Equal("Invalid email or password", exception.Message);
         }
 
         [Fact]
-        public async Task LoginAsync_WithNonExistentUser_ShouldReturnFailureResult()
+        public async Task LoginAsync_WithNonExistentUser_ShouldThrowException()
         {
             var loginDto = new LoginDto
             {
@@ -152,14 +152,12 @@ namespace IdentityService.Tests.Services
             _userManagerMock.Setup(x => x.FindByEmailAsync(loginDto.Email))
                 .ReturnsAsync((ApplicationUser)null);
 
-            var result = await _authService.LoginAsync(loginDto);
-
-            Assert.False(result.Success);
-            Assert.Equal("Invalid email or password", result.Message);
+            var exception = await Assert.ThrowsAsync<ApplicationException>(() => _authService.LoginAsync(loginDto));
+            Assert.Equal("Invalid email or password", exception.Message);
         }
 
         [Fact]
-        public async Task GetCurrentUserAsync_WithValidUserId_ShouldReturnUser()
+        public async Task GetUserByIdAsync_WithValidUserId_ShouldReturnUser()
         {
             var userId = "test-user-id";
             var user = new ApplicationUser
@@ -173,7 +171,7 @@ namespace IdentityService.Tests.Services
             _userManagerMock.Setup(x => x.FindByIdAsync(userId))
                 .ReturnsAsync(user);
 
-            var result = await _authService.GetCurrentUserAsync(userId);
+            var result = await _authService.GetUserByIdAsync(userId);
 
             Assert.NotNull(result);
             Assert.Equal(userId, result.Id);
@@ -181,16 +179,14 @@ namespace IdentityService.Tests.Services
         }
 
         [Fact]
-        public async Task GetCurrentUserAsync_WithInvalidUserId_ShouldReturnNull()
+        public async Task GetUserByIdAsync_WithInvalidUserId_ShouldThrowException()
         {
             var userId = "invalid-user-id";
 
             _userManagerMock.Setup(x => x.FindByIdAsync(userId))
                 .ReturnsAsync((ApplicationUser)null);
 
-            var result = await _authService.GetCurrentUserAsync(userId);
-
-            Assert.Null(result);
+            await Assert.ThrowsAsync<ApplicationException>(() => _authService.GetUserByIdAsync(userId));
         }
 
         public void Dispose()
