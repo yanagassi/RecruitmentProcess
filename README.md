@@ -336,23 +336,20 @@ cd Backend/IdentityService/IdentityService.Tests
 dotnet test
 ```
 
-### Cobertura de Testes
-
-- **Services:** 85%+
-- **Controllers:** 80%+
-- **Models/DTOs:** 90%+
-
 ### Evidências de Teste
 
 Abaixo estão as evidências dos testes realizados no sistema:
 
 #### Evidência de Teste 1
+
 ![Evidência de Teste 1](Docker/evidencia_teste_1.png)
 
 #### Evidência de Teste 2
+
 ![Evidência de Teste 2](Docker/evidencia_teste_2.png)
 
 #### Evidência de Teste 3
+
 ![Evidência de Teste 3](Docker/evidencia_teste_3.png)
 
 ## 📚 Documentação da API
