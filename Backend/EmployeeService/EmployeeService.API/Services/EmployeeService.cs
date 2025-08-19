@@ -195,7 +195,22 @@ namespace EmployeeService.API.Services
                     employee.Email = updateEmployeeDto.Email;
 
                 if (updateEmployeeDto.DocNumber != null)
+                {
+                    // Check if another employee already has this DocNumber
+                    var existingEmployee = await _context.Employees
+                        .FirstOrDefaultAsync(e => e.DocNumber == updateEmployeeDto.DocNumber && e.Id != id);
+                    
+                    if (existingEmployee != null)
+                    {
+                        return new EmployeeResponseDto
+                        {
+                            Success = false,
+                            Message = "An employee with this document number already exists"
+                        };
+                    }
+                    
                     employee.DocNumber = updateEmployeeDto.DocNumber;
+                }
 
                 if (updateEmployeeDto.Age.HasValue)
                     employee.Age = updateEmployeeDto.Age.Value;

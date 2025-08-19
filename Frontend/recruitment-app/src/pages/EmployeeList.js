@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { employeeService } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 
 const EmployeeList = () => {
+  const { showSuccess, showError } = useToast();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,7 +43,9 @@ const EmployeeList = () => {
       setEmployees(data);
       setError('');
     } catch (err) {
-      setError('Erro ao carregar funcionários. Por favor, tente novamente.');
+      const errorMessage = 'Erro ao carregar funcionários. Por favor, tente novamente.';
+      showError(errorMessage);
+      setError(errorMessage);
       console.error(err);
     } finally {
       setLoading(false);
@@ -53,8 +57,11 @@ const EmployeeList = () => {
       try {
         await employeeService.delete(id);
         setEmployees(employees.filter(employee => employee.id !== id));
+        showSuccess('Funcionário excluído com sucesso!');
       } catch (err) {
-        setError('Erro ao excluir funcionário. Por favor, tente novamente.');
+        const errorMessage = 'Erro ao excluir funcionário. Por favor, tente novamente.';
+        showError(errorMessage);
+        setError(errorMessage);
         console.error(err);
       }
     }

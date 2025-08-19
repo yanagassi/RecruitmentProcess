@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -28,10 +30,13 @@ const Login = () => {
       const response = await authService.login(email, password);
       
       authLogin(response.user, response.token);
+      showSuccess('Login realizado com sucesso!');
       
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Falha na autenticação. Verifique suas credenciais.');
+      const errorMessage = err.response?.data?.message || 'Falha na autenticação. Verifique suas credenciais.';
+      showError(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

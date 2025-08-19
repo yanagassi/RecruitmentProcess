@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 const Register = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,11 +42,13 @@ const Register = () => {
     e.preventDefault();
     setError('');
     if (formData.password !== formData.confirmPassword) {
+      showError('As senhas não coincidem');
       setError('As senhas não coincidem');
       return;
     }
     
     if (!validateAge(formData.birthDate)) {
+      showError('Você deve ter pelo menos 18 anos para se registrar');
       setError('Você deve ter pelo menos 18 anos para se registrar');
       return;
     }
@@ -58,12 +62,16 @@ const Register = () => {
       
       if (response.token && response.user) {
         login(response.user, response.token);
+        showSuccess('Registro realizado com sucesso!');
         navigate('/');
       } else {
-        navigate('/login', { state: { message: 'Registro realizado com sucesso! Faça login para continuar.' } });
+        showSuccess('Registro realizado com sucesso! Faça login para continuar.');
+        navigate('/login');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao registrar. Tente novamente.');
+      const errorMessage = err.response?.data?.message || 'Erro ao registrar. Tente novamente.';
+      showError(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

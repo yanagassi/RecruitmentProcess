@@ -51,9 +51,9 @@ export const employeeService = {
   },
   create: async (employeeData) => {
     const permissionLevelMap = {
-      'Employee': 1,
-      'Leader': 2,
-      'Director': 3
+      'employee': 1,
+      'manager': 2,
+      'admin': 3
     };
 
     const createEmployeeDto = {
@@ -69,20 +69,20 @@ export const employeeService = {
       managerId: employeeData.managerId ? parseInt(employeeData.managerId) : null,
       permissionLevel: permissionLevelMap[employeeData.permissionLevel] ?? 1,
       phones: employeeData.phones?.map(phone => ({
-        phoneNumber: phone.phoneNumber,
-        phoneType: phone.phoneType,
-        isPrimary: phone.isPrimary
+        PhoneNumber: phone.PhoneNumber || phone.phoneNumber,
+        PhoneType: phone.PhoneType || phone.phoneType,
+        IsPrimary: phone.IsPrimary !== undefined ? phone.IsPrimary : phone.isPrimary
       })) || []
     };
 
-    const response = await api.post('/employees', { createEmployeeDto });
+    const response = await api.post('/employees', createEmployeeDto);
     return response.data;
   },
   update: async (id, employeeData) => {
     const permissionLevelMap = {
-      'Employee': 1,
-      'Leader': 2,
-      'Director': 3
+      'employee': 1,
+      'manager': 2,
+      'admin': 3
     };
 
     const updateEmployeeDto = {
@@ -98,13 +98,13 @@ export const employeeService = {
       managerId: employeeData.managerId ? parseInt(employeeData.managerId) : null,
       permissionLevel: permissionLevelMap[employeeData.permissionLevel] ?? 1,
       phones: employeeData.phones?.map(phone => ({
-        phoneNumber: phone.phoneNumber,
-        phoneType: phone.phoneType,
-        isPrimary: phone.isPrimary
+        PhoneNumber: phone.PhoneNumber || phone.phoneNumber,
+        PhoneType: phone.PhoneType || phone.phoneType,
+        IsPrimary: phone.IsPrimary !== undefined ? phone.IsPrimary : phone.isPrimary
       })) || []
     };
 
-    const response = await api.put(`/employees/${id}`, { updateEmployeeDto });
+    const response = await api.put(`/employees/${id}`, updateEmployeeDto);
     return response.data;
   },
   delete: async (id) => {
