@@ -18,7 +18,6 @@ const Navbar = () => {
     <nav className="bg-blue-600 text-white shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
-          {/* Logo/Brand */}
           <div className="text-xl font-bold">
             <Link to="/" className="hover:text-blue-200" onClick={closeMobileMenu}>
               <span className="hidden sm:inline">Sistema de Gestão de Funcionários</span>
@@ -26,7 +25,6 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Menu */}
           <div className="hidden md:flex space-x-4 items-center">
             {isAuthenticated() ? (
               <>
@@ -64,7 +62,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button
               onClick={toggleMobileMenu}
@@ -90,7 +87,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         <div className={`md:hidden transition-all duration-300 ease-in-out ${
           isMobileMenuOpen 
             ? 'max-h-96 opacity-100 pb-4' 

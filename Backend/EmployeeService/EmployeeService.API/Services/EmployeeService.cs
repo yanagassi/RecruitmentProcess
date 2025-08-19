@@ -185,7 +185,6 @@ namespace EmployeeService.API.Services
                     };
                 }
 
-                // Update basic fields
                 if (updateEmployeeDto.FirstName != null)
                     employee.FirstName = updateEmployeeDto.FirstName;
 
@@ -219,7 +218,6 @@ namespace EmployeeService.API.Services
                 if (updateEmployeeDto.PermissionLevel.HasValue)
                     employee.PermissionLevel = updateEmployeeDto.PermissionLevel.Value;
 
-                // Update phones if provided
                 if (updateEmployeeDto.Phones != null)
                 {
                     _context.EmployeePhones.RemoveRange(employee.Phones);

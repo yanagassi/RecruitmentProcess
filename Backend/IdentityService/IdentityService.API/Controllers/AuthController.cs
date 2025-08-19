@@ -48,8 +48,6 @@ namespace IdentityService.API.Controllers
             }
         }
 
-        // Refresh token endpoint removed - not implemented yet
-
         [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(UserDto), 200)]

@@ -42,7 +42,6 @@ namespace EmployeeService.API.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Generate JWT token
             var token = GenerateJwtToken(user.Email, user.FirstName, user.LastName);
             var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes);
 

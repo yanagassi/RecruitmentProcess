@@ -36,10 +36,8 @@ const EmployeeList = () => {
   }, []);
 
   const fetchEmployees = async () => {
-    console.log('EmployeeList - fetchEmployees chamado');
     try {
       const data = await employeeService.getAll();
-      console.log('EmployeeList - dados recebidos:', data);
       setEmployees(data);
       setError('');
     } catch (err) {
@@ -83,7 +81,6 @@ const EmployeeList = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -102,7 +99,6 @@ const EmployeeList = () => {
           </div>
         </div>
 
-        {/* Search and View Controls */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 max-w-md">
@@ -170,7 +166,6 @@ const EmployeeList = () => {
             )}
           </div>
         ) : viewMode === 'table' ? (
-          // Table View
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -245,7 +240,6 @@ const EmployeeList = () => {
             </div>
           </div>
         ) : (
-          // Cards View
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEmployees.map((employee) => (
               <div key={employee.id} className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
@@ -310,7 +304,6 @@ const EmployeeList = () => {
           </div>
         )}
 
-        {/* Footer with employee count */}
         {filteredEmployees.length > 0 && (
           <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between text-sm text-gray-600">

@@ -67,7 +67,6 @@ namespace EmployeeService.API.Controllers
             if (createEmployeeDto.Age < 16)
                 return BadRequest(new { message = "Employee must be at least 16 years old" });
 
-            // Get current user email from JWT token
             var currentUserEmail = User.Identity?.Name ?? 
                                  User.FindFirst(ClaimTypes.Email)?.Value ?? 
                                  User.FindFirst("email")?.Value ??

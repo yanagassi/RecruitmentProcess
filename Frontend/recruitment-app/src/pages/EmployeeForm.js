@@ -1,586 +1,274 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { employeeService } from '../services/api';
 
 const EmployeeForm = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const isEditMode = !!id;
-  
+  const { id } = useParams();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     docNumber: '',
-    birthDate: '',
-    position: '',
-    department: '',
-    salary: '',
-    hireDate: '',
-    managerId: '',
-    managerName: '',
-    permissionLevel: 'Employee',
-    phones: [{ phoneNumber: '', phoneType: 'Mobile', isPrimary: true }],
-    password: '',
-    confirmPassword: '',
+    permissionLevel: 'employee',
+    phones: [{ phoneNumber: '' }]
   });
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [managers, setManagers] = useState([]);
-  
-  useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const data = await employeeService.getAll();
-        setManagers(data);
-      } catch (err) {
-        console.error('Erro ao carregar gerentes:', err);
-      }
-    };
-    
-    fetchManagers();
-    
-    if (isEditMode && id) {
-      const fetchEmployee = async () => {
-        try {
-          setLoading(true);
-          const data = await employeeService.getById(id);
-          // Calcular birthDate a partir da idade e hireDate
-          const calculateBirthDate = (age, hireDate) => {
-            if (!age || !hireDate) return '';
-            const hire = new Date(hireDate);
-            const birthYear = hire.getFullYear() - age;
-            return `${birthYear}-01-01`; // Aproximação
-          };
 
-          // Formatar os dados para o formato esperado pelo frontend
-          const formattedData = {
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            email: data.email || '',
-            docNumber: data.docNumber || '',
-            birthDate: calculateBirthDate(data.age, data.hireDate),
-            position: data.position || '',
-            department: data.department || '',
-            salary: data.salary ? data.salary.toString() : '',
-            hireDate: data.hireDate ? new Date(data.hireDate).toISOString().split('T')[0] : '',
-            managerId: data.managerId || '',
-            managerName: data.managerName || '',
-            permissionLevel: data.permissionLevel === 1 ? 'Employee' : data.permissionLevel === 2 ? 'Leader' : data.permissionLevel === 3 ? 'Director' : 'Employee',
-            // Garantir que phones seja um array com pelo menos um item
-            phones: data.phones && data.phones.length > 0 
-              ? data.phones.map(phone => ({
-                  phoneNumber: phone.phoneNumber || '',
-                  phoneType: phone.phoneType || 'Mobile',
-                  isPrimary: phone.isPrimary || false
-                }))
-              : [{ phoneNumber: '', phoneType: 'Mobile', isPrimary: true }],
-            password: '',
-            confirmPassword: '',
-          };
-          
-          setFormData(formattedData);
-        } catch (err) {
-          setError('Erro ao carregar dados do funcionário. Por favor, tente novamente.');
-          console.error(err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
+  useEffect(() => {
+    if (id) {
       fetchEmployee();
     }
-  }, [id, isEditMode]);
-  
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-  
-  const handlePhoneChange = (index, field, value) => {
-    const updatedPhones = [...formData.phones];
-    updatedPhones[index] = { ...updatedPhones[index], [field]: value };
-    setFormData({ ...formData, phones: updatedPhones });
-  };
-  
-  const addPhoneField = () => {
-    setFormData({
-      ...formData,
-      phones: [...formData.phones, { phoneNumber: '', phoneType: 'Mobile', isPrimary: false }],
-    });
-  };
-  
-  const removePhoneField = (index) => {
-    if (formData.phones.length > 1) {
-      const updatedPhones = formData.phones.filter((_, i) => i !== index);
-      setFormData({ ...formData, phones: updatedPhones });
-    }
-  };
-  
-  const validateAge = (birthDate) => {
-    if (!birthDate) return false;
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    
-    return age >= 16; // Mudando para 16 anos conforme validação do backend
-  };
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!isEditMode && formData.password !== formData.confirmPassword) {
-      setError('As senhas não coincidem');
-      return;
-    }
-    
-    if (!validateAge(formData.birthDate)) {
-      setError('O funcionário deve ter pelo menos 16 anos');
-      return;
-    }
-    
-    setLoading(true);
-    
+  }, [id]);
+
+  const fetchEmployee = async () => {
     try {
-      // Calcular idade a partir da data de nascimento
-      const calculateAge = (birthDate) => {
-        const today = new Date();
-        const birth = new Date(birthDate);
-        let age = today.getFullYear() - birth.getFullYear();
-        const monthDiff = today.getMonth() - birth.getMonth();
-        
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-          age--;
-        }
-        
-        return age;
-      };
-
-      // Encontrar o managerId baseado no managerName
-      const findManagerId = (managerName) => {
-        if (!managerName) return null;
-        const manager = managers.find(m => `${m.firstName} ${m.lastName}` === managerName);
-        return manager ? manager.id : null;
-      };
-
-      // Converter dados do frontend para o formato do backend
-      const { confirmPassword, birthDate, managerName, ...baseData } = formData;
-      
-      const calculatedAge = calculateAge(birthDate);
-      
-      const backendData = {
-        ...baseData,
-        age: calculatedAge >= 16 ? calculatedAge : 18, // Garantir idade mínima
-        salary: parseFloat(formData.salary) || 0,
-        hireDate: formData.hireDate ? new Date(formData.hireDate).toISOString() : new Date().toISOString(),
-        managerId: findManagerId(managerName),
-        phones: formData.phones
-          .filter(phone => phone.phoneNumber.trim() !== '')
-          .map(phone => ({
-            phoneNumber: phone.phoneNumber,
-            phoneType: phone.phoneType || 'Mobile',
-            isPrimary: phone.isPrimary || false
-          }))
-      };
-      
-      // Remover senha se estiver vazia no modo de edição
-      const dataToSubmit = isEditMode && !backendData.password 
-        ? { ...backendData, password: undefined } 
-        : backendData;
-      
-      if (isEditMode) {
-        console.log('Enviando dados para update:', dataToSubmit);
-        const result = await employeeService.update(id, dataToSubmit);
-        console.log('Resultado do update:', result);
-      } else {
-        await employeeService.create(dataToSubmit);
-      }
-      
-      navigate('/');
+      setLoading(true);
+      const data = await employeeService.getById(id);
+      setFormData({
+        ...data,
+        phones: data.phones?.length > 0 ? data.phones : [{ phoneNumber: '' }]
+      });
     } catch (err) {
-      setError(err.response?.data?.message || 'Erro ao salvar funcionário. Tente novamente.');
+      setError('Erro ao carregar dados do funcionário. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
   };
-  
-  if (loading && isEditMode) {
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePhoneChange = (index, value) => {
+    const updatedPhones = formData.phones.map((phone, i) => {
+      if (i === index) {
+        return { ...phone, phoneNumber: value };
+      }
+      return phone;
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      phones: updatedPhones
+    }));
+  };
+
+  const addPhone = () => {
+    setFormData(prev => ({
+      ...prev,
+      phones: [...prev.phones, { phoneNumber: '' }]
+    }));
+  };
+
+  const removePhone = (index) => {
+    if (formData.phones.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        phones: prev.phones.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const phones = formData.phones.filter(phone => phone.phoneNumber.trim() !== '');
+      const employeeData = { ...formData, phones };
+
+      if (id) {
+        await employeeService.update(id, employeeData);
+      } else {
+        await employeeService.create(employeeData);
+      }
+
+      navigate('/employees');
+    } catch (err) {
+      setError('Erro ao salvar funcionário. Por favor, tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && id) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 text-lg">Carregando dados do funcionário...</p>
+        </div>
       </div>
     );
   }
-  
+
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
-        {isEditMode ? 'Editar Funcionário' : 'Adicionar Funcionário'}
-      </h2>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="firstName">
-              Nome *
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="firstName"
-              type="text"
-              name="firstName"
-              placeholder="Nome"
-              value={formData.firstName}
-              onChange={handleChange}
-              required
-            />
+    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {id ? 'Editar Funcionário' : 'Adicionar Funcionário'}
+            </h1>
+            <p className="mt-1 text-gray-600">
+              {id ? 'Atualize as informações do funcionário abaixo' : 'Preencha as informações do novo funcionário abaixo'}
+            </p>
           </div>
-          
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="lastName">
-              Sobrenome *
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="lastName"
-              type="text"
-              name="lastName"
-              placeholder="Sobrenome"
-              value={formData.lastName}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email *
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="email"
-            type="email"
-            name="email"
-            placeholder="seu@email.com"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="docNumber">
-            CPF/Documento *
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="docNumber"
-            type="text"
-            name="docNumber"
-            placeholder="000.000.000-00"
-            value={formData.docNumber}
-            onChange={handleChange}
-            required
-            disabled={isEditMode} // Não permitir edição do documento em modo de edição
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="birthDate">
-              Data de Nascimento *
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="birthDate"
-              type="date"
-              name="birthDate"
-              value={formData.birthDate}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="hireDate">
-              Data de Contratação *
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="hireDate"
-              type="date"
-              name="hireDate"
-              value={formData.hireDate}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="position">
-              Cargo *
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="position"
-              type="text"
-              name="position"
-              placeholder="Ex: Desenvolvedor, Analista"
-              value={formData.position}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="department">
-              Departamento
-            </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              id="department"
-              type="text"
-              name="department"
-              placeholder="Ex: TI, RH, Vendas"
-              value={formData.department}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="salary">
-            Salário
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="salary"
-            type="number"
-            name="salary"
-            placeholder="0.00"
-            step="0.01"
-            min="0"
-            value={formData.salary}
-            onChange={handleChange}
-          />
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="managerName">
-            Gerente
-          </label>
-          <select
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="managerName"
-            name="managerName"
-            value={formData.managerName || ''}
-            onChange={handleChange}
-          >
-            <option value="">Selecione um gerente (opcional)</option>
-            {managers.map((manager) => (
-              <option 
-                key={manager.id} 
-                value={`${manager.firstName} ${manager.lastName}`}
-              >
-                {manager.firstName} {manager.lastName}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="permissionLevel">
-            Nível de Permissão *
-          </label>
-          <select
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="permissionLevel"
-            name="permissionLevel"
-            value={formData.permissionLevel}
-            onChange={handleChange}
-            required
-          >
-            <option value="Employee">Funcionário</option>
-            <option value="Leader">Líder</option>
-            <option value="Director">Diretor</option>
-          </select>
-        </div>
-        
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Telefones
-          </label>
-          {formData.phones.map((phone, index) => (
-            <div key={index} className="border rounded p-3 mb-3 bg-gray-50">
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <div>
-                  <label className="block text-gray-600 text-xs font-bold mb-1">
-                    Número *
-                  </label>
-                  <input
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    type="text"
-                    placeholder="(00) 00000-0000"
-                    value={phone.phoneNumber}
-                    onChange={(e) => handlePhoneChange(index, 'phoneNumber', e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-600 text-xs font-bold mb-1">
-                    Tipo
-                  </label>
-                  <select
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    value={phone.phoneType}
-                    onChange={(e) => handlePhoneChange(index, 'phoneType', e.target.value)}
-                  >
-                    <option value="Mobile">Celular</option>
-                    <option value="Home">Residencial</option>
-                    <option value="Work">Comercial</option>
-                  </select>
-                </div>
-                <div className="flex items-center">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={phone.isPrimary}
-                      onChange={(e) => handlePhoneChange(index, 'isPrimary', e.target.checked)}
-                    />
-                    <span className="text-gray-600 text-xs font-bold">Principal</span>
-                  </label>
-                </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6" role="alert">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span>{error}</span>
               </div>
-              <div className="flex justify-end">
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Nome</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  required
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Sobrenome</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  required
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="docNumber" className="block text-sm font-medium text-gray-700">Documento (CPF/RG)</label>
+              <input
+                type="text"
+                id="docNumber"
+                name="docNumber"
+                value={formData.docNumber}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="permissionLevel" className="block text-sm font-medium text-gray-700">Nível de Permissão</label>
+              <select
+                id="permissionLevel"
+                name="permissionLevel"
+                value={formData.permissionLevel}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="employee">Funcionário</option>
+                <option value="manager">Gerente</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">Telefones</label>
                 <button
                   type="button"
-                  onClick={() => removePhoneField(index)}
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm focus:outline-none focus:shadow-outline mr-2"
-                  disabled={formData.phones.length <= 1}
+                  onClick={addPhone}
+                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Remover
+                  <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Adicionar Telefone
                 </button>
-                {index === formData.phones.length - 1 && (
-                  <button
-                    type="button"
-                    onClick={addPhoneField}
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm focus:outline-none focus:shadow-outline"
-                  >
-                    Adicionar
-                  </button>
-                )}
               </div>
+              {formData.phones.map((phone, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <input
+                    type="tel"
+                    value={phone.phoneNumber}
+                    onChange={(e) => handlePhoneChange(index, e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  {formData.phones.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePhone(index)}
+                      className="inline-flex items-center p-2 border border-transparent rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => navigate('/employees')}
+                className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar'
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-        
-        {!isEditMode && (
-          <>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                Senha *
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="password"
-                type="password"
-                name="password"
-                placeholder="********"
-                value={formData.password}
-                onChange={handleChange}
-                required={!isEditMode}
-                minLength="8"
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
-                Confirmar Senha *
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                placeholder="********"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required={!isEditMode}
-                minLength="8"
-              />
-            </div>
-          </>
-        )}
-        
-        {isEditMode && (
-          <>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                Nova Senha (deixe em branco para manter a atual)
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="password"
-                type="password"
-                name="password"
-                placeholder="********"
-                value={formData.password}
-                onChange={handleChange}
-                minLength="8"
-              />
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
-                Confirmar Nova Senha
-              </label>
-              <input
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                placeholder="********"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                minLength="8"
-              />
-            </div>
-          </>
-        )}
-        
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? 'Salvando...' : 'Salvar'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

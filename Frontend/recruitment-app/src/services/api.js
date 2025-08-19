@@ -6,7 +6,6 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// Interceptor para adicionar o token de autenticação em todas as requisições
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -18,7 +17,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor para tratar erros de autenticação
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -52,16 +50,12 @@ export const employeeService = {
     return response.data.employee;
   },
   create: async (employeeData) => {
-    console.log('API create - dados recebidos:', employeeData);
-    
-    // Converter permissionLevel de string para número
     const permissionLevelMap = {
       'Employee': 1,
       'Leader': 2,
       'Director': 3
     };
 
-    // Preparar dados no formato esperado pelo backend
     const createEmployeeDto = {
       firstName: employeeData.firstName || '',
       lastName: employeeData.lastName || '',
@@ -81,24 +75,16 @@ export const employeeService = {
       })) || []
     };
 
-    console.log('API create - dados formatados:', createEmployeeDto);
-    console.log('API create - enviando para:', '/employees');
-
     const response = await api.post('/employees', { createEmployeeDto });
-    console.log('API create - resposta:', response.data);
     return response.data;
   },
   update: async (id, employeeData) => {
-    console.log('API update - dados recebidos:', employeeData);
-    
-    // Converter permissionLevel de string para número
     const permissionLevelMap = {
       'Employee': 1,
       'Leader': 2,
       'Director': 3
     };
 
-    // Preparar dados no formato esperado pelo backend
     const updateEmployeeDto = {
       firstName: employeeData.firstName,
       lastName: employeeData.lastName,
@@ -118,11 +104,7 @@ export const employeeService = {
       })) || []
     };
 
-    console.log('API update - dados formatados:', updateEmployeeDto);
-    console.log('API update - enviando para:', `/employees/${id}`);
-
     const response = await api.put(`/employees/${id}`, { updateEmployeeDto });
-    console.log('API update - resposta:', response.data);
     return response.data;
   },
   delete: async (id) => {

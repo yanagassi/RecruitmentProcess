@@ -11,7 +11,6 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verificar se há um usuário logado no localStorage
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
 
