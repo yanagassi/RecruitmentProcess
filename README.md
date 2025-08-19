@@ -199,8 +199,8 @@ O sistema cria automaticamente um usuário administrador:
 
 | Método | Endpoint             | Descrição              | Autenticação |
 | ------ | -------------------- | ---------------------- | ------------ |
-| POST   | `/api/auth/register` | Registrar novo usuário | ❌           |
-| POST   | `/api/auth/login`    | Login do usuário       | ❌           |
+| POST   | `/api/auth/register` | Registrar novo usuário | Não          |
+| POST   | `/api/auth/login`    | Login do usuário       | Não          |
 
 **Exemplo de Login:**
 
@@ -231,11 +231,11 @@ POST /api/auth/login
 
 | Método | Endpoint              | Descrição                | Autenticação |
 | ------ | --------------------- | ------------------------ | ------------ |
-| GET    | `/api/employees`      | Listar funcionários      | ✅           |
-| GET    | `/api/employees/{id}` | Obter funcionário por ID | ✅           |
-| POST   | `/api/employees`      | Criar funcionário        | ✅           |
-| PUT    | `/api/employees/{id}` | Atualizar funcionário    | ✅           |
-| DELETE | `/api/employees/{id}` | Deletar funcionário      | ✅           |
+| GET    | `/api/employees`      | Listar funcionários      | Sim          |
+| GET    | `/api/employees/{id}` | Obter funcionário por ID | Sim          |
+| POST   | `/api/employees`      | Criar funcionário        | Sim          |
+| PUT    | `/api/employees/{id}` | Atualizar funcionário    | Sim          |
+| DELETE | `/api/employees/{id}` | Deletar funcionário      | Sim          |
 
 **Exemplo de Criação:**
 
@@ -267,7 +267,7 @@ Authorization: Bearer {token}
 
 | Método | Endpoint      | Descrição         | Autenticação |
 | ------ | ------------- | ----------------- | ------------ |
-| GET    | `/api/status` | Status do serviço | ❌           |
+| GET    | `/api/status` | Status do serviço | Não          |
 
 ## Banco de Dados
 
@@ -352,7 +352,7 @@ Abaixo estão as evidências dos testes realizados no sistema:
 
 ![Evidência de Teste 3](Docker/evidencia_teste_3.png)
 
-## 📚 Documentação da API
+## Documentação da API
 
 ### Swagger UI
 
